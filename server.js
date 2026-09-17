@@ -1,14 +1,16 @@
 const express    = require('express');
 const bodyParser = require('body-parser');
+const cors       = require('cors');
 const db         = require('./database');
 
 const app = express();
+app.use(cors());
 
 // Middleware: interpreta o corpo das requisições como JSON
 app.use(bodyParser.json());
 
-// Middleware: serve os arquivos estáticos da pasta 'public' (HTML, CSS, JS do frontend)
-app.use(express.static('public'));
+// Middleware: serve os arquivos estáticos da pasta 'Public' (HTML, CSS, JS do frontend)
+app.use(express.static('Public'));
 
 // ─────────────────────────────────────────────────────────────
 // TODO: rota POST /cadastrar
@@ -32,10 +34,30 @@ app.use(express.static('public'));
 //     - Se der certo, responda com status 201 e mensagem de sucesso.
 //
 // ─────────────────────────────────────────────────────────────
-app.post('/cadastrar', (req, res) => {
-  // seu código aqui
-});
 
+app.post('/cadastrar', (req, res) => {
+  const { nome, email, telefone, servico } = req.body;
+  const nomeLimpo = typeof nome === 'string' ? nome.trim() : '';
+  const emailLimpo = typeof email === 'string' ? email.trim() : '';
+  const telefoneLimpo = typeof telefone === 'string' ? telefone.trim() : '';
+  const servicoLimpo = typeof servico === 'string' ? servico.trim() : '';
+
+  if (!nomeLimpo || !emailLimpo || !telefoneLimpo || !servicoLimpo) {
+    return res.status(400).json({ mensagem: 'Preencha todos os campos obrigatórios.' });
+  }
+
+  db.run(
+    'INSERT INTO tutores (nome, email, telefone, servico) VALUES (?, ?, ?, ?)',
+    [nomeLimpo, emailLimpo, telefoneLimpo, servicoLimpo],
+    function (err) {
+      if (err) {
+        return res.status(500).json({ mensagem: 'Falha ao cadastrar tutor.' });
+      }
+
+      return res.status(201).json({ mensagem: 'Tutor cadastrado com sucesso!' });
+    }
+  );
+});
 
 // ─────────────────────────────────────────────────────────────
 // TODO: rota GET /listar
@@ -56,8 +78,15 @@ app.post('/cadastrar', (req, res) => {
 //       res.json(rows)
 //
 // ─────────────────────────────────────────────────────────────
+
 app.get('/listar', (req, res) => {
-  // seu código aqui
+  db.all('SELECT * FROM tutores', (err, rows) => {
+    if (err) {
+      return res.status(500).json({ mensagem: 'Falha ao listar tutores.' });
+    }
+
+    return res.json(rows);
+  });
 });
 
 
